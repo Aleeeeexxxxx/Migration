@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+declare TABLE_NAME='models'
+
 declare CONTAINER_NAME='mysql'
 declare MYSQL_ROOT_USERNAME='root'
 declare MYSQL_ROOT_PASSWORD='root'
@@ -42,7 +44,7 @@ db_to_create=(
 
 for item in "${db_to_create[@]}"; do
     runSQL "CREATE DATABASE IF NOT EXISTS ${item} ;"
-    runSQL "CREATE TABLE IF NOT EXISTS ${item}.models (
+    runSQL "CREATE TABLE IF NOT EXISTS ${item}.${TABLE_NAME} (
               id VARCHAR(191) NOT NULL PRIMARY KEY,
               msg VARCHAR(255) DEFAULT NULL,
               updated_at BIGINT DEFAULT NULL
@@ -52,8 +54,8 @@ for item in "${db_to_create[@]}"; do
 done
 
 # restrict root 
-runSQL "DELETE FROM mysql.user WHERE User = 'root' AND Host != 'localhost';"
-runSQL "UPDATE mysql.user SET Host = 'localhost' WHERE User = 'root';"
+runSQL "DELETE FROM mysql.user WHERE User = ${MYSQL_ROOT_USERNAME} AND Host != 'localhost';"
+runSQL "UPDATE mysql.user SET Host = 'localhost' WHERE User = ${MYSQL_ROOT_USERNAME};"
 
 # flush
 runSQL "FLUSH PRIVILEGES;"
