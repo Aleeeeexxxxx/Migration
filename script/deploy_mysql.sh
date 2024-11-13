@@ -6,37 +6,31 @@ declare CONTAINER_NAME='mysql'
 declare MYSQL_ROOT_USERNAME='root'
 declare MYSQL_ROOT_PASSWORD='root'
 
-declare MYSQL_USERNAME='origin'
-declare MYSQL_PASSWORD='origin'
+declare MYSQL_DEFAULT_USERNAME='origin'
+declare MYSQL_DEFAULT_PASSWORD='origin'
 
 # run mysql
 if [ ! "$(docker ps -q -f name=$CONTAINER_NAME)" ]; then
     if [ "$(docker ps -aq -f status=exited -f name=$CONTAINER_NAME)" ]; then
         docker rm $CONTAINER_NAME
     fi
-    docker run -p 3306:3306 \
+    make build_mysql
+    docker run -d \
+               -p 3306:3306 \
                --name "${CONTAINER_NAME}" \
                -e MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD}" \
-               mysql
+               alex-mysql:latest
+    sleep 10 # wait for mysql up
 fi
 
 echo 'container mysql started'
 
-runSQL() {
-  local SQL=$1
-  echo "exec sql - ${SQL}"
-  docker exec -i "${CONTAINER_NAME}" \
-              mysql \
-              -u"${MYSQL_ROOT_USERNAME}" \
-              -p"${MYSQL_ROOT_USERNAME}" \
-              -e "${SQL}"
-}
-
-# restrict root privilege
-runSQL "UPDATE mysql.user SET Host='localhost' WHERE User='root';"
+declare MYSQL_USERNAME="${MYSQL_ROOT_USERNAME}"
+declare MYSQL_PASSWORD="${MYSQL_ROOT_USERNAME}"
+source ./script/common.sh
 
 # create users
-runSQL "create user if not exists '${MYSQL_USERNAME}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';"
+runSQL "create user if not exists '${MYSQL_DEFAULT_USERNAME}'@'%' IDENTIFIED BY '${MYSQL_DEFAULT_PASSWORD}';"
 
 # create databases and grant privileges
 db_to_create=(
@@ -47,9 +41,19 @@ db_to_create=(
 )
 
 for item in "${db_to_create[@]}"; do
-    runSQL "create database if not exists ${item} ;"
-    runSQL "GRANT ALL PRIVILEGES ON ${item}.* TO '${MYSQL_USERNAME}'@'%';"
+    runSQL "CREATE DATABASE IF NOT EXISTS ${item} ;"
+    runSQL "CREATE TABLE IF NOT EXISTS ${item}.models (
+              id VARCHAR(191) NOT NULL PRIMARY KEY,
+              msg VARCHAR(255) DEFAULT NULL,
+              updated_at BIGINT DEFAULT NULL
+            );"
+    runSQL "GRANT ALL PRIVILEGES ON ${item}.* TO '${MYSQL_DEFAULT_USERNAME}'@'%';"
+    runSQL "GRANT FILE ON *.* TO 'origin'@'%';"
 done
+
+# restrict root 
+runSQL "DELETE FROM mysql.user WHERE User = 'root' AND Host != 'localhost';"
+runSQL "UPDATE mysql.user SET Host = 'localhost' WHERE User = 'root';"
 
 # flush
 runSQL "FLUSH PRIVILEGES;"

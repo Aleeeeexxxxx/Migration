@@ -13,7 +13,7 @@ import (
 
 const (
 	batchSize    = 1000
-	generatedMsg = "generated"
+	generatedMsg = "'generated'"
 
 	defaultOutput = "test.csv"
 )
@@ -47,7 +47,8 @@ func main() {
 
 		for i := 0; i < total; i++ {
 			records = append(records, []string{
-				uuid.New().String(), generatedMsg, now, // ID, MSG, UPDATED_AT
+				// ID, MSG, UPDATED_AT
+				fmt.Sprintf("'%s'", uuid.New().String()), generatedMsg, now, 
 			})
 		}
 

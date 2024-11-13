@@ -14,10 +14,10 @@ import (
 )
 
 const (
-	batchSize      = 500
+	batchSize      = 1000
 	maxWorker      = 10
 	defaultBufSize = 2 * 1024 * 1024 // 2MB
-	sql            = "INSERT INTO models ( ID, MSG, UPDATED_AT ) VALUES "
+	sqlInsertMany  = "INSERT INTO models ( ID, MSG, UPDATED_AT ) VALUES "
 )
 
 func consumer(ch chan producer.Rows, wg *sync.WaitGroup, cfg src.DBConfig, pool *sync.Pool) {
@@ -36,11 +36,10 @@ func consumer(ch chan producer.Rows, wg *sync.WaitGroup, cfg src.DBConfig, pool 
 		}
 
 		if len(records) > 0 {
-			if result := db.Raw(sql + records.ToValues() + ";"); result.Error != nil {
+			sql := sqlInsertMany + records.ToValues() + ";"
+			if result := db.Exec(sql); result.Error != nil {
 				log.Fatal("fail to insert data to mysql", result.Error)
 			}
-
-			log.Printf("Inserted %d records\r\n", len(records))
 		}
 
 		pool.Put(records[:0])
@@ -82,8 +81,9 @@ func main() {
 	var loadErr error
 	ch := make(chan producer.Rows)
 	p := producer.NewProducer(f, batchSize, pool, defaultBufSize)
+	total := 0
 
-	for end := false; end; {
+	for end := false; !end; {
 		records, err := p.Produce()
 		if err != nil {
 			end = true
@@ -91,6 +91,9 @@ func main() {
 				loadErr = err
 			}
 		}
+
+		total += len(records)
+		log.Printf("has inserted %d records\r\n", total)
 
 		select {
 		case ch <- records:
@@ -103,6 +106,7 @@ func main() {
 		}
 	}
 
+	close(ch)
 	wg.Wait()
 
 	log.Printf("elapsed time: %s\n", time.Since(begin))
