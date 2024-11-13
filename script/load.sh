@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euox pipefail
+set -euo pipefail
 
 declare USE_LOADER=false
 
@@ -23,6 +23,7 @@ docker exec -i "${CONTAINER_NAME}" \
             -o "${OUTPUT_FILE}" \
             -n "${GENERATED_NUM}"
 
+echo "data generated. total=${GENERATED_NUM}"
 
 # remove all data
 runSQL "DELETE FROM ${TABLE_NAME} WHERE 1=1;"
