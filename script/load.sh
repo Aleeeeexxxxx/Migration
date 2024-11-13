@@ -5,6 +5,7 @@ set -euo pipefail
 declare USE_LOADER=false
 
 declare GENERATED_NUM=1000000
+# mysql -u root -p -e "SHOW VARIABLES LIKE 'secure_file_priv';"
 declare OUTPUT_FILE='/var/lib/mysql-files/data.csv'
 declare TABLE_NAME='migration_origin.models'
 

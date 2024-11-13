@@ -1,10 +1,14 @@
 #!/bin/bash
 
 runSQL() {
-  mysql_config_editor set --login-path=local \
-                          --host=localhost \
-                          --user="${MYSQL_USERNAME}" \
-                          --password="${MYSQL_PASSWORD}"
+  # docker exec -i "${CONTAINER_NAME}" \
+  #             mysql \
+  #             mysql_config_editor \
+  #             set \
+  #             --login-path=local \
+  #             --host=localhost \
+  #             --user="${MYSQL_USERNAME}" \
+  #             --password="${MYSQL_PASSWORD}"
 
   local SQL=$1
   echo "exec sql - ${SQL}"
@@ -12,8 +16,10 @@ runSQL() {
   start_time=$(date +%s)
   docker exec -i "${CONTAINER_NAME}" \
               mysql \
-              --login-path=local \
+              -u"${MYSQL_USERNAME}" \
+              -p"${MYSQL_PASSWORD}" \
               -e "${SQL}"
+              # --login-path=local \
 
   end_time=$(date +%s)
   execution_time=$((end_time - start_time))

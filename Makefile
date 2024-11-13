@@ -11,5 +11,11 @@ loader:
 build_mysql:
 	docker build -t alex-mysql:latest .
 
+deploy_mysql:
+	./script/deploy_mysql.sh
+
+load:
+	./script/load.sh
+
 clean:
 	rm -f generator loader
