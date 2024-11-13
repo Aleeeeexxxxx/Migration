@@ -100,6 +100,9 @@ func (l *CustomLogger) Trace(_ context.Context, begin time.Time, fc func() (stri
 			zap.Error(err),
 		)
 	} else if elapsed.Seconds() > slowSQLThreshold {
+		if len(sql) > 100 {
+			sql = sql[:100] // prevent too long sql
+		}
 		l.logger.Warn(
 			"slow sql",
 			zap.String("sql", sql),
